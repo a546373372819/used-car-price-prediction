@@ -1,0 +1,43 @@
+{
+  "rows_after_cleaning": 4499,
+  "train_rows": 3599,
+  "test_rows": 900,
+  "target_column": "sale_price",
+  "numeric_features": [
+    "yr_mfr",
+    "kms_run",
+    "times_viewed",
+    "assured_buy",
+    "is_hot",
+    "total_owners",
+    "fitness_certificate",
+    "reserved",
+    "warranty_avail",
+    "car_age",
+    "km_per_year",
+    "is_old_car",
+    "high_mileage"
+  ],
+  "categorical_features": [
+    "car_name",
+    "fuel_type",
+    "city",
+    "body_type",
+    "transmission",
+    "variant",
+    "registered_city",
+    "registered_state",
+    "rto",
+    "source",
+    "make",
+    "model",
+    "car_availability",
+    "car_rating",
+    "brand",
+    "make_model",
+    "make_body_type",
+    "fuel_transmission"
+  ],
+  "test_size": 0.2,
+  "random_state": 42
+}

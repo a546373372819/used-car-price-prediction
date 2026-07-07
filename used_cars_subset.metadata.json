@@ -1,0 +1,48 @@
+{
+  "input_file": "Used_Car_Price_Prediction.csv",
+  "output_file": "used_cars_subset.csv",
+  "original_shape": [
+    7400,
+    29
+  ],
+  "subset_shape": [
+    5000,
+    29
+  ],
+  "target_column_used_for_sampling": "sale_price",
+  "random_state": 42,
+  "sampling": "stratified by sale_price quantile bins when sale_price exists, otherwise random sampling",
+  "cleaning_done_here": false,
+  "cleaning_note": "Column cleaning, relevant-column selection, leakage-column removal, invalid sale_price removal and duplicate removal are handled in regression.py.",
+  "kept_columns": [
+    "car_name",
+    "yr_mfr",
+    "fuel_type",
+    "kms_run",
+    "sale_price",
+    "city",
+    "times_viewed",
+    "body_type",
+    "transmission",
+    "variant",
+    "assured_buy",
+    "registered_city",
+    "registered_state",
+    "is_hot",
+    "rto",
+    "source",
+    "make",
+    "model",
+    "car_availability",
+    "total_owners",
+    "broker_quote",
+    "original_price",
+    "car_rating",
+    "ad_created_on",
+    "fitness_certificate",
+    "emi_starts_from",
+    "booking_down_pymnt",
+    "reserved",
+    "warranty_avail"
+  ]
+}

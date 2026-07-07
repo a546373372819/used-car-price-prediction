@@ -1,0 +1,13 @@
+{
+  "best_model": "Stacking Regressor",
+  "target_mean_test": 422580.83,
+  "target_median_test": 382299.0,
+  "MAE": 30495.893966205054,
+  "RMSE": 49793.92382921097,
+  "R2": 0.9149946814742363,
+  "MAPE_percent": 7.1798090011394295,
+  "MdAPE_percent": 5.429351713895132,
+  "NMAE_mean_percent": 7.216582438489946,
+  "NMAE_median_percent": 7.976974558187454,
+  "RMSLE": 0.10199237333439388
+}
