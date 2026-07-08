@@ -4,8 +4,9 @@ This folder contains only Dušan's regression part of the project. The goal is t
 
 ## Files
 
-- `make_used_car_subset.py` - creates the real project subset from the full Kaggle CSV.
-- `used_car_regression.py` - runs EDA, preprocessing, model training, evaluation and saves report evidence.
+- `make_subset.py` - creates the real project subset from the full Kaggle CSV.
+- `preprocessing.py` - shared dataset cleanup and feature creation for regression and clustering.
+- `regression.py` - runs EDA, regression-specific preprocessing, model training, evaluation and saves report evidence.
 - `requirements_regression.txt` - Python packages needed locally.
 
 ## 1. Create the project subset
@@ -13,7 +14,7 @@ This folder contains only Dušan's regression part of the project. The goal is t
 The specification says that the project should use a subset of several thousand rows and at least 15 relevant attributes. Run:
 
 ```bash
-python make_used_car_subset.py Used_Car_Price_Prediction.csv used_cars_subset.csv --rows 5000
+python make_subset.py Used_Car_Price_Prediction.csv used_cars_subset.csv --rows 5000
 ```
 
 This creates:
@@ -34,13 +35,13 @@ These columns are excluded because they are almost direct price estimates/deriva
 ## 2. Run regression
 
 ```bash
-python used_car_regression.py used_cars_subset.csv --target sale_price --output outputs/regression
+python regression.py used_cars_subset.csv --target sale_price --output outputs/regression
 ```
 
 For a quick first check:
 
 ```bash
-python used_car_regression.py used_cars_subset.csv --target sale_price --output outputs/regression_fast --fast
+python regression.py used_cars_subset.csv --target sale_price --output outputs/regression_fast --fast
 ```
 
 ## Output structure
@@ -100,13 +101,21 @@ Evaluation metrics:
 
 ## Preprocessing summary
 
-The script performs dataset-specific preparation for the uploaded CSV:
+Shared preprocessing is in `preprocessing.py` so the clustering part can reuse
+the same cleaned dataset representation. For clustering, call
+`preprocess_raw_dataframe(..., require_positive_target=False)` if `sale_price`
+should be kept only for cluster interpretation and not used as an input feature.
+
+The shared module performs dataset-specific preparation for the uploaded CSV:
 
 - cleans column names,
 - removes invalid targets,
 - removes price leakage columns by default,
 - extracts date features from `ad_created_on`,
-- creates `car_age_at_ad`, `kms_per_year`, `log_kms_run`, `same_registered_city`, `make_model`, `brand_from_name`,
+- creates `car_age`, `km_per_year`, `log_kms_run`, `make_model`, `make_body_type`, `fuel_transmission`, `brand`,
+
+The regression script then performs regression-specific train-only steps:
+
 - imputes missing numeric values with the median,
 - clips numeric outliers using train-only 1% and 99% quantiles,
 - scales numeric attributes,

@@ -7,12 +7,12 @@ only that: it samples rows and saves a new CSV.
 
 Important: project-specific cleaning is intentionally NOT done here anymore.
 Column-name cleaning, relevant-column selection, leakage-column removal, invalid
-sale_price removal and duplicate removal are handled inside regression.py.
+sale_price removal and duplicate removal are handled inside preprocessing.py.
 
 Default usage:
     python make_subset.py Used_Car_Price_Prediction.csv used_cars_subset.csv
 
-The output CSV is intended to be used by regression.py.
+The output CSV is intended to be used by regression.py and clustering scripts.
 """
 
 import argparse
@@ -108,7 +108,7 @@ def create_subset(input_path: str, output_path: str, n_rows: int, random_state: 
         "cleaning_done_here": False,
         "cleaning_note": (
             "Column cleaning, relevant-column selection, leakage-column removal, "
-            "invalid sale_price removal and duplicate removal are handled in regression.py."
+            "invalid sale_price removal and duplicate removal are handled in preprocessing.py."
         ),
         "kept_columns": sampled.columns.tolist(),
     }
@@ -137,7 +137,7 @@ def main():
     print(f"Saved subset: {args.output_csv}")
     print(f"Rows x columns: {sampled.shape[0]} x {sampled.shape[1]}")
     print(f"Metadata: {meta_path}")
-    print("Cleaning/preprocessing moved to regression.py")
+    print("Cleaning/preprocessing moved to preprocessing.py")
 
 
 if __name__ == "__main__":
