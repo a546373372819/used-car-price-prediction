@@ -500,9 +500,9 @@ def main():
     # shared cleaning
     raw_df = load_dataset(args.data_path)
     sample_size = args.sample if args.sample and args.sample > 0 else None
+    # preprocessing now always uses sale_price as the target and returns it
     df, target_col = preprocess_raw_dataframe(
         raw_df,
-        requested_target=args.target,
         sample_size=sample_size,
         require_positive_target=True,
     )
