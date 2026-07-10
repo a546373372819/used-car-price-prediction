@@ -1,19 +1,3 @@
-"""
-Regression part of the project: Used car sale price prediction.
-
-Run example:
-    python used_car_regression.py used_cars.csv --target sale_price --output outputs/regression
-
-The script performs:
-- basic EDA and saves figures/tables for the report,
-- preprocessing with train-only fitted transformations,
-- train/test split,
-- training and comparison of several regression models,
-- evaluation with MAE, RMSE, R2 and percentage-based error metrics,
-- error analysis plots,
-- feature importance and permutation importance for the selected model.
-"""
-
 import argparse
 import json
 import math
@@ -69,7 +53,7 @@ def load_dataset(path: str) -> pd.DataFrame:
 
 
 class QuantileClipper(BaseEstimator, TransformerMixin):
-    """Clips numerical columns to quantiles learned only from the training split."""
+    #Clips numerical columns to quantiles learned only from the training split.
 
     def __init__(self, lower=0.01, upper=0.99):
         self.lower = lower
@@ -86,75 +70,13 @@ class QuantileClipper(BaseEstimator, TransformerMixin):
         return np.clip(X_arr, self.lower_bounds_, self.upper_bounds_)
 
 
-class TargetMeanEncoder(BaseEstimator, TransformerMixin):
-    """Smoothed target mean encoding for high-cardinality categorical features."""
-
-    def __init__(self, smoothing=12.0):
-        self.smoothing = smoothing
-
-    def fit(self, X, y):
-        X_df = self._to_dataframe(X)
-        y_arr = np.asarray(y, dtype=float)
-        self.columns_ = X_df.columns.tolist()
-        self.global_mean_ = float(np.nanmean(y_arr))
-        self.maps_ = {}
-
-        for col in self.columns_:
-            work = pd.DataFrame({"category": self._clean(X_df[col]), "target": y_arr})
-            stats = work.groupby("category")["target"].agg(["mean", "count"])
-            weight = stats["count"] / (stats["count"] + self.smoothing)
-            encoded = (weight * stats["mean"]) + ((1.0 - weight) * self.global_mean_)
-            self.maps_[col] = encoded.to_dict()
-        return self
-
-    def transform(self, X):
-        X_df = self._to_dataframe(X)
-        encoded_cols = []
-        for col in self.columns_:
-            values = self._clean(X_df[col]) if col in X_df.columns else pd.Series(["unknown"] * len(X_df))
-            encoded_cols.append(values.map(self.maps_[col]).fillna(self.global_mean_).to_numpy())
-        return np.column_stack(encoded_cols) if encoded_cols else np.empty((len(X_df), 0))
-
-    def get_feature_names_out(self, input_features=None):
-        columns = input_features if input_features is not None else getattr(self, "columns_", [])
-        return np.array([f"{col}_target_mean" for col in columns], dtype=object)
-
-    @staticmethod
-    def _to_dataframe(X):
-        if isinstance(X, pd.DataFrame):
-            return X.copy()
-        return pd.DataFrame(X)
-
-    @staticmethod
-    def _clean(series: pd.Series) -> pd.Series:
-        return (
-            series
-            .fillna("unknown")
-            .astype(str)
-            .str.lower()
-            .str.strip()
-            .replace({"": "unknown", "nan": "unknown", "none": "unknown"})
-        )
-
-
 def make_one_hot_encoder():
-    """Compatible with newer and older scikit-learn versions."""
-    try:
-        return OneHotEncoder(
-            handle_unknown="ignore",
-            sparse_output=False,
-            min_frequency=3,
-            max_categories=120,
-        )
-    except TypeError:
-        # Older scikit-learn versions do not support sparse_output/min_frequency/max_categories.
-        return OneHotEncoder(handle_unknown="ignore", sparse=False)
-
-
-def remove_target_outliers(df: pd.DataFrame, target_col: str, lower_q=0.05, upper_q=0.95) -> pd.DataFrame:
-    lower = df[target_col].quantile(lower_q)
-    upper = df[target_col].quantile(upper_q)
-    return df[(df[target_col] >= lower) & (df[target_col] <= upper)].reset_index(drop=True)
+    return OneHotEncoder(
+        handle_unknown="ignore",
+        sparse_output=False,
+        min_frequency=3,
+        max_categories=120,
+    )
 
 
 def infer_feature_columns(df: pd.DataFrame, target_col: str):
@@ -183,25 +105,23 @@ def build_preprocessor(numeric_cols, categorical_cols):
             ("one_hot", make_one_hot_encoder()),
         ]
     )
-    categorical_target_pipeline = Pipeline(
-        steps=[
-            ("imputer", SimpleImputer(strategy="constant", fill_value="unknown")),
-            ("target_mean", TargetMeanEncoder(smoothing=15.0)),
-            ("scaler", StandardScaler()),
-        ]
-    )
 
     transformers = []
+
     if numeric_cols:
         transformers.append(("num", numeric_pipeline, numeric_cols))
+
     if categorical_cols:
         transformers.append(("cat", categorical_pipeline, categorical_cols))
-        transformers.append(("cat_target", categorical_target_pipeline, categorical_cols))
 
-    return ColumnTransformer(transformers=transformers, remainder="drop", sparse_threshold=0.0)
-
+    return ColumnTransformer(
+        transformers=transformers,
+        remainder="drop",
+        sparse_threshold=0.0,
+    )
 
 def wrap_target_regressor(regressor):
+    #used for log of attr.
     return TransformedTargetRegressor(
         regressor=regressor,
         func=np.log1p,
@@ -349,15 +269,11 @@ def build_models(numeric_cols, categorical_cols, fast: bool):
 
 
 def regression_metrics(y_true, y_pred):
-    """
-    Returns both absolute and relative regression metrics.
-
-    MAE/RMSE are kept in the original price scale, because they show the real
-    money error. Percentage metrics are added only to make the error easier to
-    interpret in the report.
-    """
+    #Calculate the four regression metrics used in the project.
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
+
+    # A predicted sale price cannot be negative.
     y_pred = np.maximum(y_pred, 0.0)
 
     abs_errors = np.abs(y_true - y_pred)
@@ -365,35 +281,19 @@ def regression_metrics(y_true, y_pred):
     rmse = math.sqrt(mean_squared_error(y_true, y_pred))
     r2 = r2_score(y_true, y_pred)
 
-    # Percentage errors are computed only where the real price is positive.
+    # MAPE is computed only for rows with a positive actual price.
     valid_percentage = y_true > 0
     percentage_errors = np.full_like(y_true, np.nan, dtype=float)
     percentage_errors[valid_percentage] = (
         abs_errors[valid_percentage] / y_true[valid_percentage]
     ) * 100.0
-
     mape = float(np.nanmean(percentage_errors))
-    mdape = float(np.nanmedian(percentage_errors))
-
-    target_mean = float(np.nanmean(y_true))
-    target_median = float(np.nanmedian(y_true))
-    nmae_mean = float((mae / target_mean) * 100.0) if target_mean > 0 else np.nan
-    nmae_median = float((mae / target_median) * 100.0) if target_median > 0 else np.nan
-
-    # RMSLE is useful for prices because it evaluates relative/log-scale error
-    # and is less dominated by very expensive cars.
-    y_true_nonnegative = np.maximum(y_true, 0.0)
-    rmsle = math.sqrt(mean_squared_error(np.log1p(y_true_nonnegative), np.log1p(y_pred)))
 
     return {
         "MAE": mae,
         "RMSE": rmse,
         "R2": r2,
         "MAPE_percent": mape,
-        "MdAPE_percent": mdape,
-        "NMAE_mean_percent": nmae_mean,
-        "NMAE_median_percent": nmae_median,
-        "RMSLE": rmsle,
     }
 
 
@@ -547,7 +447,9 @@ def evaluate_models(models, X_train, X_test, y_train, y_test):
         )
         fitted_models[name] = model
     results = pd.DataFrame(rows).sort_values(
-    ["MAPE_percent", "MdAPE_percent", "RMSE"], ascending=True).reset_index(drop=True)
+        ["MAPE_percent", "RMSE", "MAE", "R2"],
+        ascending=[True, True, True, False],
+    ).reset_index(drop=True)
     return results, fitted_models
 
 
@@ -634,14 +536,6 @@ def save_model_analysis(best_model, best_name: str, X_test, y_test, results_df: 
     fig.savefig(figures_dir / "11_residuals_vs_predicted.png", dpi=160)
     plt.close(fig)
 
-    # Save predictions for later manual checks/report tables.
-    abs_error = np.abs(residuals)
-    abs_percentage_error = np.where(
-        np.asarray(y_test, dtype=float) > 0,
-        (abs_error / np.asarray(y_test, dtype=float)) * 100.0,
-        np.nan,
-    )
-
     # Save predictions together with original test features.
     y_test_arr = np.asarray(y_test, dtype=float)
     residuals_arr = y_test_arr - pred
@@ -685,8 +579,6 @@ def save_model_analysis(best_model, best_name: str, X_test, y_test, results_df: 
     best_metrics = regression_metrics(y_test, pred)
     error_summary = {
         "best_model": best_name,
-        "target_mean_test": float(np.mean(y_test)),
-        "target_median_test": float(np.median(y_test)),
         **{k: float(v) for k, v in best_metrics.items()},
     }
     save_json(tables_dir / "best_model_error_summary.json", error_summary)
@@ -762,11 +654,7 @@ def save_model_analysis(best_model, best_name: str, X_test, y_test, results_df: 
 def main():
     parser = argparse.ArgumentParser(description="Used car sale price regression project")
     parser.add_argument("data_path", help="Path to the used-car dataset file: CSV, XLSX/XLS or JSON")
-    parser.add_argument("--target", default="sale_price", help="Target column name. Default: sale_price")
     parser.add_argument("--output", default="outputs/regression", help="Output directory for figures, tables and model")
-    parser.add_argument("--test-size", type=float, default=0.20, help="Test split size. Default: 0.20")
-    parser.add_argument("--sample", type=int, default=0, help="Optional random sample size. 0 means use all rows.")
-    parser.add_argument("--keep-target-outliers", action="store_true", help="Do not remove extreme target outliers.")
     parser.add_argument("--fast", action="store_true", help="Faster run: fewer trees and no stacking regressor.")
     args = parser.parse_args()
 
@@ -777,11 +665,7 @@ def main():
     ensure_dir(tables_dir)
 
     raw_df = load_dataset(args.data_path)
-    sample_size = args.sample if args.sample and args.sample > 0 else None
-    df, target_col = preprocess_raw_dataframe(raw_df, args.target, sample_size=sample_size)
-
-    if not args.keep_target_outliers:
-        df = remove_target_outliers(df, target_col)
+    df, target_col = preprocess_raw_dataframe(raw_df)
 
     numeric_cols, categorical_cols = infer_feature_columns(df, target_col)
     selected_columns = numeric_cols + categorical_cols + [target_col]
@@ -797,10 +681,17 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
-        test_size=args.test_size,
+        test_size=0.2,
         random_state=RANDOM_STATE,
         stratify=price_bins,
     )
+
+    lower = y_train.quantile(0.05)
+    upper = y_train.quantile(0.95)
+
+    keep_mask = y_train.between(lower, upper)
+    X_train = X_train.loc[keep_mask]
+    y_train = y_train.loc[keep_mask]
 
     split_info = {
         "rows_after_cleaning": int(len(df_model)),
@@ -809,7 +700,7 @@ def main():
         "target_column": target_col,
         "numeric_features": numeric_cols,
         "categorical_features": categorical_cols,
-        "test_size": args.test_size,
+        "test_size": 0.2,
         "random_state": RANDOM_STATE,
     }
     save_json(tables_dir / "split_and_features_info.json", split_info)
@@ -829,10 +720,6 @@ def main():
     print(f"RMSE: {best_row['RMSE']:.4f}")
     print(f"R2: {best_row['R2']:.4f}")
     print(f"MAPE_percent: {best_row['MAPE_percent']:.4f}")
-    print(f"MdAPE_percent: {best_row['MdAPE_percent']:.4f}")
-    print(f"NMAE_mean_percent: {best_row['NMAE_mean_percent']:.4f}")
-    print(f"NMAE_median_percent: {best_row['NMAE_median_percent']:.4f}")
-    print(f"RMSLE: {best_row['RMSLE']:.4f}")
     print(f"Saved outputs to: {output_dir}")
 
 

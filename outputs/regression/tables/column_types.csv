@@ -35,7 +35,6 @@ make,str
 model,str
 car_availability,str
 car_rating,str
-brand,object
 make_model,str
 make_body_type,str
 fuel_transmission,str

@@ -1,19 +1,4 @@
-"""
-Create only the reproducible row subset for the used-car price prediction project.
 
-The full Kaggle CSV has about 7400 rows and 29 columns. The project specification
-says that we should use a subset of several thousand rows. This script now does
-only that: it samples rows and saves a new CSV.
-
-Important: project-specific cleaning is intentionally NOT done here anymore.
-Column-name cleaning, relevant-column selection, leakage-column removal, invalid
-sale_price removal and duplicate removal are handled inside preprocessing.py.
-
-Default usage:
-    python make_subset.py Used_Car_Price_Prediction.csv used_cars_subset.csv
-
-The output CSV is intended to be used by regression.py and clustering scripts.
-"""
 
 import argparse
 import json
@@ -27,17 +12,10 @@ TARGET_COL = "sale_price"
 
 
 def load_csv(path: str) -> pd.DataFrame:
-    """Load the original CSV without cleaning columns or filtering rows."""
     return pd.read_csv(path)
 
 
 def stratified_price_sample(df: pd.DataFrame, n_rows: int, random_state: int) -> pd.DataFrame:
-    """
-    Sample rows while approximately preserving the sale_price distribution.
-
-    This does not clean the dataset. The temporary numeric conversion is used only
-    for creating sampling bins and is not saved as a preprocessing step.
-    """
     if n_rows <= 0 or len(df) <= n_rows:
         return df.sample(frac=1.0, random_state=random_state).reset_index(drop=True)
 
@@ -71,7 +49,6 @@ def stratified_price_sample(df: pd.DataFrame, n_rows: int, random_state: int) ->
 
     sampled = pd.concat(parts, axis=0)
 
-    # Adjust to exactly n_rows because rounding by groups may give a few rows too many/too few.
     if len(sampled) > n_rows:
         sampled = sampled.sample(n=n_rows, random_state=random_state)
     elif len(sampled) < n_rows:
