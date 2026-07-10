@@ -1,7 +1,7 @@
 {
-  "rows_after_cleaning": 4499,
+  "rows_after_cleaning": 4999,
   "train_rows": 3599,
-  "test_rows": 900,
+  "test_rows": 1000,
   "target_column": "sale_price",
   "numeric_features": [
     "yr_mfr",
@@ -42,7 +42,6 @@
     "model",
     "car_availability",
     "car_rating",
-    "brand",
     "make_model",
     "make_body_type",
     "fuel_transmission"
